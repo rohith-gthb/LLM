@@ -1,0 +1,3 @@
+I want total distinct products present for the brand NIVEA in each month that are selling.
+
+Give products info along with growth numbers that have shown best growth in nivea from aug 24 to sep 24
