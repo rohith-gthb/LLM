@@ -1,0 +1,6 @@
+model,prompt,Query,Query valid,Comment,Tags,val time taken,gen time taken
+,,SELECT DISTINCT Brand FROM sea_monthly_all_kpis_beauty_final_df_new WHERE monthyear = '82023',False,"The query does not account for 'Level of aggregation' which is assumed to be overall level in this case, but it specifically asks for data at the estSub_category1, estSub_category2, or estSub_category3 level.","Distinct Brands, Aug 2023",48.4454474,45.5840848
+,,SELECT DISTINCT Brand FROM sea_monthly_all_kpis_beauty_final_df_new WHERE monthyear = '82023',True,The query correctly selects distinct brands for August 2023 by filtering on the monthyear column.,"distinct, brand, date",34.9400953,44.1167275
+,,,,,,,
+,,,,,,,
+,,,,,,,

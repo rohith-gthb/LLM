@@ -1,11 +1,18 @@
 
 csv_log_file_path = r'generate_api_responses.csv'
-context_file='./Chat2sql/config/context.txt'
+query_generate_context='./Chat2sql/config/query_generate_context.txt'
+query_validate_context='./Chat2sql/config/query_validate_context.txt'
+
 ollama_models = ["llama3.1:8b-instruct-q8_0", "deepseek-coder-v2:16b-lite-instruct-q4_0", "qwen2.5-coder:7b-instruct-fp16"]
 
-response_template = '''{
+generate_response_template = '''{
     "Tags": "[query identification tags separated by commas]",
     "Query": "[Insert your SQL query here, formatted with 4 spaces of indentation as a single string]"
+}'''
+
+validate_response_template = '''{
+    "Query valid": "[expecting a boolean output]", 
+    "Comment": "[Justify the boolean output in 1 line.]"
 }'''
 
 schema = '''
@@ -23,6 +30,28 @@ Brand: Brand of the product (varchar)
 
 table_name = '''sea_monthly_all_kpis_beauty_final_df_new'''
 
+common_terminology = '''Key Terminologies:
+Level of aggregation: When the user mentions "format level" or "segment level," interpret this as a request for information at the estSub_category1, estSub_category2, estSub_category3 level. 
+If not specified, it is safe to assume that the level of aggregate is overall level.
+Growth: When the user refers to growth, it means month-on-month growth of sale_value calculated as: (New month revenue - Old month revenue) / Old month revenue.
+Response Structure:
+Please format your response as a JSON object, strictly adhering to the template below. Do not include any explanatory text.
+'''
+
+COT = '''
+Process Steps:
+Go through the process step by step
+1. Understand the period of interest
+2. Understand column of interest
+3. Understand the aggregate level of interest, if not mentioned then deafult to the level of column of interest.
+4. Understand the filters of interest
+
+Identify main keywords to assist in generating the SQL query.
+Analyze the question word by word to determine their request.
+Determine the level of aggregation desired by the user.
+Identify the specific metric the user is interested in aggregating.
+Confirm if the requested level of statistics is specified in the query.
+Construct the SQL query, clearly including all necessary filters and statements.'''
 
 generate_api_prompt = f'''
 You are an AI assistant collaborating with a team of three data analysis experts who specialize in querying SQL databases. 
@@ -36,30 +65,42 @@ The database contains a table named "{table_name}" with the following columns:
 Discussion Focus:
 Discussions among experts should center around sale_value. Do not reference Monthly_sales_MaxMin unless units sold are specifically requested.
 
-Key Terminologies:
-Level of aggregation: When the user mentions "format level" or "segment level," interpret this as a request for information at the estSub_category1, estSub_category2, or estSub_category3 level. If not specified, provide data at the overall level.
-Growth: When the user refers to growth, it means month-on-month growth of sale_value calculated as: (New month revenue - Old month revenue) / Old month revenue.
-Response Structure:
-Please format your response as a JSON object, strictly adhering to the template below. Do not include any explanatory text.
+{common_terminology}
 
-{response_template}
+{generate_response_template}
 
-Process Steps:
-Go through the process step by step
-1. Understand the period of interest
-2. Understand column of interest
-3. Understand the aggregate level of interest, if not mentioned then deafult to the level of column of interest.
-4. Understand the filters of interest
-
-Identify main keywords to assist in generating the SQL query.
-Analyze the question word by word to determine their request.
-Determine the level of aggregation desired by the user.
-Identify the specific metric the user is interested in aggregating.
-Confirm if the requested level of statistics is specified in the query.
-Construct the SQL query, clearly including all necessary filters and statements.
+{COT}
 
 Guidelines:
 Feel free to ask clarifying questions if any details are unclear.
 Only provide the JSON object as specified.
 Do not share any explanations or additional text.
 Treat each question independently; do not reference parameters from previous questions.'''
+
+validate_api_prompt = f'''
+You are an expert data analyst working at a big tech company with expertise in writing sql queries. Your job is to correct the sql queries written by others.  
+A coleague of the same company wrote a query that might be faulty, check the query by understanding the problem he is trying to solve.  
+
+The information you will be provided with are
+1. Problem statement. 
+2. Answer for that problem statement. 
+
+Below mentioned are the information regarding data table in DB.
+
+# Table name:
+{table_name}
+
+# Schema: 
+{schema}
+
+{common_terminology}
+
+# Response template: 
+{validate_response_template}
+
+Guidelines:
+Feel free to ask clarifying questions if any details are unclear.
+Only provide the JSON object as specified.
+Do not share any explanations or additional text.
+Treat each question independently; do not reference parameters from previous questions.
+'''
